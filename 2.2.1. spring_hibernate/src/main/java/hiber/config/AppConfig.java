@@ -1,6 +1,5 @@
 package hiber.config;
 
-import hiber.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -15,44 +14,47 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 import javax.sql.DataSource;
 import java.util.Properties;
 
-
 @Configuration
 @PropertySource("classpath:db.properties")
 @EnableTransactionManagement
-@ComponentScan(value = "hiber")
+@ComponentScan(basePackages = "hiber")
 public class AppConfig {
 
    @Autowired
    private Environment env;
 
    @Bean
-   public DataSource getDataSource() {
+   public LocalSessionFactoryBean sessionFactory() {
+      LocalSessionFactoryBean sessionFactory = new LocalSessionFactoryBean();
+      sessionFactory.setDataSource(dataSource());
+      sessionFactory.setPackagesToScan(new String[] { "model" });
+      sessionFactory.setHibernateProperties(hibernateProperties());
+      return sessionFactory;
+   }
+
+   @Bean
+   public DataSource dataSource() {
       DriverManagerDataSource dataSource = new DriverManagerDataSource();
-      dataSource.setDriverClassName(env.getProperty("db.driver"));
-      dataSource.setUrl(env.getProperty("db.url"));
-      dataSource.setUsername(env.getProperty("db.username"));
-      dataSource.setPassword(env.getProperty("db.password"));
+      dataSource.setDriverClassName(env.getProperty("hibernate.connection.driver_class"));
+      dataSource.setUrl(env.getProperty("hibernate.connection.url"));
+      dataSource.setUsername(env.getProperty("hibernate.connection.username"));
+      dataSource.setPassword(env.getProperty("hibernate.connection.password"));
       return dataSource;
    }
 
-   @Bean
-   public LocalSessionFactoryBean getSessionFactory() {
-      LocalSessionFactoryBean factoryBean = new LocalSessionFactoryBean();
-      factoryBean.setDataSource(getDataSource());
-      
-      Properties props=new Properties();
-      props.put("hibernate.show_sql", env.getProperty("hibernate.show_sql"));
-      props.put("hibernate.hbm2ddl.auto", env.getProperty("hibernate.hbm2ddl.auto"));
-
-      factoryBean.setHibernateProperties(props);
-      factoryBean.setAnnotatedClasses(User.class);
-      return factoryBean;
+   private Properties hibernateProperties() {
+      Properties properties = new Properties();
+      properties.put("hibernate.dialect", env.getProperty("hibernate.dialect"));
+      properties.put("hibernate.hbm2ddl.auto", env.getProperty("hibernate.hbm2ddl.auto"));
+      properties.put("hibernate.show_sql", env.getProperty("hibernate.show_sql"));
+      properties.put("hibernate.format_sql", env.getProperty("hibernate.format_sql"));
+      return properties;
    }
 
    @Bean
-   public HibernateTransactionManager getTransactionManager() {
-      HibernateTransactionManager transactionManager = new HibernateTransactionManager();
-      transactionManager.setSessionFactory(getSessionFactory().getObject());
-      return transactionManager;
+   public HibernateTransactionManager transactionManager() {
+      HibernateTransactionManager txManager = new HibernateTransactionManager();
+      txManager.setSessionFactory(sessionFactory().getObject());
+      return txManager;
    }
 }
