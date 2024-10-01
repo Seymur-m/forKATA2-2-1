@@ -20,14 +20,18 @@ import java.util.Properties;
 @ComponentScan(basePackages = "hiber")
 public class AppConfig {
 
+   private final Environment env;
+
    @Autowired
-   private Environment env;
+   public AppConfig(Environment env) {
+      this.env = env;
+   }
 
    @Bean
-   public LocalSessionFactoryBean sessionFactory() {
+   public LocalSessionFactoryBean sessionFactory(DataSource dataSource) {
       LocalSessionFactoryBean sessionFactory = new LocalSessionFactoryBean();
-      sessionFactory.setDataSource(dataSource());
-      sessionFactory.setPackagesToScan(new String[] { "model" });
+      sessionFactory.setDataSource(dataSource);
+      sessionFactory.setPackagesToScan("model");
       sessionFactory.setHibernateProperties(hibernateProperties());
       return sessionFactory;
    }
@@ -52,9 +56,9 @@ public class AppConfig {
    }
 
    @Bean
-   public HibernateTransactionManager transactionManager() {
+   public HibernateTransactionManager transactionManager(LocalSessionFactoryBean sessionFactory) {
       HibernateTransactionManager txManager = new HibernateTransactionManager();
-      txManager.setSessionFactory(sessionFactory().getObject());
+      txManager.setSessionFactory(sessionFactory.getObject());
       return txManager;
    }
 }

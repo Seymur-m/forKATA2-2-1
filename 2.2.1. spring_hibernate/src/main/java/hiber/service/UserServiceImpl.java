@@ -24,7 +24,6 @@ public class UserServiceImpl implements UserService {
    }
 
    @Override
-   @Transactional
    public User getUserByCar(String model, int series) {
       return userDao.findUserByCar(model, series);
    }
